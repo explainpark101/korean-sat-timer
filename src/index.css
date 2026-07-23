@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #0066cc;
+  --color-primary-focus: #0071e3;
+  --color-primary-on-dark: #2997ff;
+  --color-ink: #1d1d1f;
+  --color-body: #1d1d1f;
+  --color-body-on-dark: #ffffff;
+  --color-body-muted: #cccccc;
+  --color-ink-muted-80: #333333;
+  --color-ink-muted-48: #7a7a7a;
+  --color-divider-soft: #f0f0f0;
+  --color-hairline: #e0e0e0;
+  --color-canvas: #ffffff;
+  --color-canvas-parchment: #f5f5f7;
+  --color-surface-pearl: #fafafc;
+  --color-surface-tile-1: #272729;
+  --color-surface-tile-2: #2a2a2c;
+  --color-surface-tile-3: #252527;
+  --color-surface-black: #000000;
+  --color-surface-chip: #d2d2d7;
+  --color-on-primary: #ffffff;
+  --color-on-dark: #ffffff;
+  --color-subnav: rgba(245, 245, 247, 0.8);
+  --color-subnav-border: rgba(0, 0, 0, 0.08);
+  --color-row-selected: rgba(0, 102, 204, 0.06);
+
+  --font-sans: "SF Pro Text", "SF Pro Display", system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 18px;
+  --radius-pill: 9999px;
+
+  --shadow-product: 3px 5px 30px 0 rgba(0, 0, 0, 0.22);
+}
+
+/* Dark mode: invert light canvases to near-black; accent band becomes parchment */
+html.dark {
+  --color-primary: #2997ff;
+  --color-primary-focus: #2997ff;
+  --color-primary-on-dark: #0066cc;
+  --color-ink: #f5f5f7;
+  --color-body: #f5f5f7;
+  --color-body-on-dark: #1d1d1f;
+  --color-body-muted: #6e6e73;
+  --color-ink-muted-80: #a1a1a6;
+  --color-ink-muted-48: #86868b;
+  --color-divider-soft: #2c2c2e;
+  --color-hairline: #424245;
+  --color-canvas: #1d1d1f;
+  --color-canvas-parchment: #000000;
+  --color-surface-pearl: #2c2c2e;
+  --color-surface-tile-1: #f5f5f7;
+  --color-surface-tile-2: #ffffff;
+  --color-surface-tile-3: #e8e8ed;
+  --color-surface-black: #000000;
+  --color-surface-chip: #424245;
+  --color-on-primary: #ffffff;
+  --color-on-dark: #1d1d1f;
+  --color-subnav: rgba(29, 29, 31, 0.8);
+  --color-subnav-border: rgba(255, 255, 255, 0.08);
+  --color-row-selected: rgba(41, 151, 255, 0.12);
+  --shadow-product: 3px 5px 30px 0 rgba(0, 0, 0, 0.55);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-canvas-parchment);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.47;
+    letter-spacing: -0.374px;
+  }
+
+  button {
+    font-family: inherit;
+    @apply cursor-pointer;
+  }
+
+  button:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+    color: var(--color-ink);
+  }
+
+  .confirm-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  html.dark .confirm-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+  }
+}
