@@ -21,6 +21,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import AnalogClock from './AnalogClock';
+import LapPanel from './LapPanel';
 
 const SIREN_DURATION_SEC = 1.5;
 const THEME_STORAGE_KEY = 'csat-timer-theme';
@@ -248,6 +249,10 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
   const [pendingSubject, setPendingSubject] = useState(null);
   const [isClockFullscreen, setIsClockFullscreen] = useState(false);
+  /** Laps keyed by period label (e.g. "1교시"); anchorSec = first-lap baseline */
+  const [lapsByPeriod, setLapsByPeriod] = useState({});
+  const [lapSortAsc, setLapSortAsc] = useState(true);
+  const [justAddedLapId, setJustAddedLapId] = useState(null);
 
   const audioRef = useRef(null);
   const sirenTriggeredRef = useRef(new Set());
@@ -559,6 +564,56 @@ export default function App() {
       setIsRunning(false);
     }
   };
+
+  const selectedSubject =
+    activeSubjects.find((s) => s.id === selectedSubjectId) || activeSubjects[0];
+  const currentPeriod = selectedSubject.period;
+  const currentPeriodBucket = lapsByPeriod[currentPeriod];
+  const currentPeriodLaps = currentPeriodBucket?.laps || [];
+  const currentLapAnchorSec =
+    currentPeriodBucket?.anchorSec ?? selectedSubject.startSec;
+
+  const handleRecordLap = useCallback(() => {
+    const periodKey = selectedSubject.period;
+    const newLap = {
+      id:
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `lap-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      examSec: currentSec,
+    };
+    setJustAddedLapId(newLap.id);
+    setLapsByPeriod((prev) => {
+      const existing = prev[periodKey];
+      if (!existing) {
+        return {
+          ...prev,
+          [periodKey]: {
+            anchorSec: selectedSubject.startSec,
+            laps: [newLap],
+          },
+        };
+      }
+      return {
+        ...prev,
+        [periodKey]: {
+          ...existing,
+          laps: [...existing.laps, newLap],
+        },
+      };
+    });
+  }, [currentSec, selectedSubject.period, selectedSubject.startSec]);
+
+  const handleClearPeriodLaps = useCallback(() => {
+    const periodKey = selectedSubject.period;
+    setJustAddedLapId(null);
+    setLapsByPeriod((prev) => {
+      if (!prev[periodKey]) return prev;
+      const next = { ...prev };
+      delete next[periodKey];
+      return next;
+    });
+  }, [selectedSubject.period]);
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas-parchment font-sans text-ink">
@@ -940,6 +995,19 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              <LapPanel
+                period={currentPeriod}
+                subjectName={selectedSubject.name}
+                subjectStartSec={currentLapAnchorSec}
+                laps={currentPeriodLaps}
+                sortAsc={lapSortAsc}
+                justAddedLapId={justAddedLapId}
+                onToggleSort={() => setLapSortAsc((prev) => !prev)}
+                onRecordLap={handleRecordLap}
+                onClearLaps={handleClearPeriodLaps}
+                formatTimeSeconds={formatTimeSeconds}
+              />
             </div>
           </section>
         </div>
