@@ -19,7 +19,9 @@ import {
   Moon,
   Maximize2,
   Minimize2,
+  Flag,
 } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import AnalogClock from './AnalogClock';
 import LapPanel from './LapPanel';
 
@@ -120,10 +122,10 @@ const SUBJECTS = [
     id: 'inquiry2',
     period: '4교시',
     name: '탐구2',
-    startTime: '16:10',
-    endTime: '16:40',
-    startSec: 16 * 3600 + 10 * 60,
-    endSec: 16 * 3600 + 40 * 60,
+    startTime: '16:07',
+    endTime: '16:37',
+    startSec: 16 * 3600 + 7 * 60,
+    endSec: 16 * 3600 + 37 * 60,
     durationMin: 30,
   },
   {
@@ -244,6 +246,7 @@ export default function App() {
   const [currentSec, setCurrentSec] = useState(SUBJECTS[0].startSec - 10);
   const [isRunning, setIsRunning] = useState(false);
   const [showDigital, setShowDigital] = useState(false);
+  const [showLaps, setShowLaps] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [sirenNotification, setSirenNotification] = useState(null);
   const [theme, setTheme] = useState(getInitialTheme);
@@ -253,12 +256,49 @@ export default function App() {
   const [lapsByPeriod, setLapsByPeriod] = useState({});
   const [lapSortAsc, setLapSortAsc] = useState(true);
   const [justAddedLapId, setJustAddedLapId] = useState(null);
-
+  const reduceMotion = useReducedMotion();
   const audioRef = useRef(null);
   const sirenTriggeredRef = useRef(new Set());
   const confirmDialogRef = useRef(null);
   const clockFullscreenRef = useRef(null);
   const isDark = theme === 'dark';
+
+  const panelMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12 },
+      }
+    : {
+        initial: { opacity: 0, y: -8 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -8 },
+        transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+      };
+  const lapMotion = reduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.12 },
+      }
+    : {
+        initial: { opacity: 0, x: 16 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: 16 },
+        transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] },
+      };
+  const bothPanelsHidden = !showDigital && !showLaps;
+  const toggleAllPanels = () => {
+    if (bothPanelsHidden) {
+      setShowDigital(true);
+      setShowLaps(true);
+      return;
+    }
+    setShowDigital(false);
+    setShowLaps(false);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -728,6 +768,21 @@ export default function App() {
                 </>
               )}
             </button>
+            <button
+              type="button"
+              onClick={handleRecordLap}
+              disabled={!isRunning}
+              className="flex h-[38px] min-w-[44px] items-center justify-center gap-1.5 rounded-pill bg-primary px-[18px] text-[17px] font-normal leading-[1.47] tracking-[-0.374px] text-on-primary outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary-focus enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              title={
+                isRunning
+                  ? '현재 시험 시각으로 랩 기록'
+                  : '타이머를 시작한 뒤에 랩을 기록할 수 있습니다'
+              }
+              aria-disabled={!isRunning}
+            >
+              <Flag className="h-4 w-4" />
+              랩
+            </button>
           </div>
         </div>
       </div>
@@ -749,8 +804,8 @@ export default function App() {
 
       <main className="mx-auto w-full max-w-[1440px] flex-1">
         <div className="grid grid-cols-1 items-stretch lg:grid-cols-12">
-          {/* Schedule — product-tile-parchment / store-utility rhythm */}
-          <section className="bg-canvas-parchment px-5 py-12 sm:px-8 sm:py-20 lg:col-span-5 lg:px-10">
+          {/* Schedule — sticky so it stays with the clock column in the viewport */}
+          <section className="bg-canvas-parchment px-5 py-12 sm:px-8 sm:py-20 lg:sticky lg:top-[96px] lg:col-span-5 lg:max-h-[calc(100dvh-96px)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:px-10">
             <div className="mb-6 flex items-end justify-between gap-3">
               <div>
                 <div className="mb-2 flex items-center gap-2 text-primary">
@@ -875,7 +930,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center sm:flex-wrap sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setShowDigital(!showDigital)}
@@ -896,6 +951,47 @@ export default function App() {
 
                 <button
                   type="button"
+                  onClick={() => setShowLaps(!showLaps)}
+                  className="flex shrink-0 items-center gap-1.5 rounded-md border-[3px] border-divider-soft bg-surface-pearl px-3.5 py-2 text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-80 active:scale-95"
+                >
+                  {showLaps ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5 text-primary" />
+                      랩 숨기기
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      랩 보기
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleAllPanels}
+                  className="flex shrink-0 items-center gap-1.5 rounded-md border-[3px] border-divider-soft bg-surface-pearl px-3.5 py-2 text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-80 active:scale-95"
+                  title={
+                    bothPanelsHidden
+                      ? '디지털 시계와 랩 모두 보기'
+                      : '디지털 시계와 랩 모두 숨기기'
+                  }
+                >
+                  {bothPanelsHidden ? (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      모두 보기
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5 text-primary" />
+                      모두 숨기기
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={enterClockFullscreen}
                   className="flex shrink-0 items-center gap-1.5 rounded-md border-[3px] border-divider-soft bg-surface-pearl px-3.5 py-2 text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-80 active:scale-95"
                   title="아날로그 시계만 전체화면"
@@ -906,108 +1002,151 @@ export default function App() {
               </div>
             </div>
 
-            <div className="mt-8 flex flex-1 flex-col items-center">
-              <AnalogClock currentSec={currentSec} isDark={isDark} />
+            <div
+              className={`mt-8 grid flex-1 gap-8 ${
+                showLaps
+                  ? 'grid-cols-1 items-start xl:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)]'
+                  : 'grid-cols-1'
+              }`}
+            >
+              <div className="flex min-w-0 flex-col items-center">
+                <AnalogClock currentSec={currentSec} isDark={isDark} />
 
-              {showDigital && (
-                <div className="mt-4 w-full max-w-md space-y-3">
-                  <div className="rounded-lg border border-hairline bg-canvas-parchment px-6 py-5 text-center">
-                    <div className="mb-2 flex items-center justify-center gap-1.5 text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
-                      <Clock className="h-3.5 w-3.5 text-primary" />
-                      현재 디지털 시각 (24시간)
-                    </div>
-                    <div className="font-display text-[40px] font-semibold leading-[1.1] tracking-normal text-ink sm:text-[56px] sm:leading-[1.07] sm:tracking-[-0.28px]">
-                      {formatTimeSeconds(currentSec)}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-hairline bg-canvas-parchment px-6 py-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0 text-left">
-                        <div className="text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
-                          현재 타이머 진행 상태
+                <AnimatePresence initial={false}>
+                  {showDigital && (
+                    <motion.div
+                      key="digital-panel"
+                      className="mt-4 w-full max-w-md space-y-3 overflow-hidden"
+                      {...panelMotion}
+                    >
+                      <div className="rounded-lg border border-hairline bg-canvas-parchment px-6 py-5 text-center">
+                        <div className="mb-2 flex items-center justify-center gap-1.5 text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
+                          <Clock className="h-3.5 w-3.5 text-primary" />
+                          현재 디지털 시각 (24시간)
                         </div>
-                        <div className="mt-1 truncate text-[17px] font-semibold leading-[1.24] tracking-[-0.374px] text-ink">
-                          {currentPhase.title}
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <div className="text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
-                          남은 시간
-                        </div>
-                        <div className="mt-1 font-mono text-[21px] font-semibold leading-[1.19] tracking-[0.231px] text-primary">
-                          {formatDuration(currentPhase.remainingSec)}
+                        <div className="font-display text-[40px] font-semibold leading-[1.1] tracking-normal text-ink sm:text-[56px] sm:leading-[1.07] sm:tracking-[-0.28px]">
+                          {formatTimeSeconds(currentSec)}
                         </div>
                       </div>
-                    </div>
+
+                      <div className="rounded-lg border border-hairline bg-canvas-parchment px-6 py-5">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0 text-left">
+                            <div className="text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
+                              현재 타이머 진행 상태
+                            </div>
+                            <div className="mt-1 truncate text-[17px] font-semibold leading-[1.24] tracking-[-0.374px] text-ink">
+                              {currentPhase.title}
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-[14px] font-normal leading-[1.43] tracking-[-0.224px] text-ink-muted-48">
+                              남은 시간
+                            </div>
+                            <div className="mt-1 font-mono text-[21px] font-semibold leading-[1.19] tracking-[0.231px] text-primary">
+                              {formatDuration(currentPhase.remainingSec)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="mt-10 w-full max-w-xl space-y-3">
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                    <button
+                      type="button"
+                      onClick={handlePrevSubject}
+                      className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
+                      title="이전 과목으로 이동"
+                    >
+                      <SkipBack className="h-4 w-4" />
+                      <span className="hidden sm:inline">이전 과목</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={togglePlay}
+                      className="flex h-12 min-w-[160px] flex-1 max-w-[200px] items-center justify-center gap-2 rounded-pill bg-primary px-7 text-[18px] font-light leading-none text-on-primary outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary-focus active:scale-95"
+                    >
+                      {isRunning ? (
+                        <>
+                          <Pause className="h-5 w-5 fill-current" />
+                          일시정지
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-5 w-5 fill-current" />
+                          타이머 시작
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResetCurrent}
+                      className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
+                      title="선택된 과목 시작 10초 전으로 리셋"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="hidden sm:inline">처음부터</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleNextSubject}
+                      className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
+                      title="다음 과목으로 이동"
+                    >
+                      <span className="hidden sm:inline">다음 과목</span>
+                      <SkipForward className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
-              )}
 
-              <div className="mt-10 w-full max-w-xl">
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePrevSubject}
-                    className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
-                    title="이전 과목으로 이동"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                    <span className="hidden sm:inline">이전 과목</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={togglePlay}
-                    className="flex h-12 min-w-[160px] flex-1 max-w-[200px] items-center justify-center gap-2 rounded-pill bg-primary px-7 text-[18px] font-light leading-none text-on-primary outline-offset-2 focus-visible:outline-2 focus-visible:outline-primary-focus active:scale-95"
-                  >
-                    {isRunning ? (
-                      <>
-                        <Pause className="h-5 w-5 fill-current" />
-                        일시정지
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-5 w-5 fill-current" />
-                        타이머 시작
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleResetCurrent}
-                    className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
-                    title="선택된 과목 시작 10초 전으로 리셋"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span className="hidden sm:inline">처음부터</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleNextSubject}
-                    className="flex h-11 items-center gap-1.5 rounded-sm bg-ink px-4 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-dark active:scale-95"
-                    title="다음 과목으로 이동"
-                  >
-                    <span className="hidden sm:inline">다음 과목</span>
-                    <SkipForward className="h-4 w-4" />
-                  </button>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleRecordLap}
+                      disabled={!isRunning}
+                      className="flex h-11 min-w-[160px] items-center justify-center gap-1.5 rounded-sm bg-primary px-6 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-primary enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      title={
+                        isRunning
+                          ? '현재 시험 시각으로 랩 기록'
+                          : '타이머를 시작한 뒤에 랩을 기록할 수 있습니다'
+                      }
+                      aria-disabled={!isRunning}
+                    >
+                      <Flag className="h-4 w-4" />
+                      랩
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <LapPanel
-                period={currentPeriod}
-                subjectName={selectedSubject.name}
-                subjectStartSec={currentLapAnchorSec}
-                laps={currentPeriodLaps}
-                sortAsc={lapSortAsc}
-                justAddedLapId={justAddedLapId}
-                onToggleSort={() => setLapSortAsc((prev) => !prev)}
-                onRecordLap={handleRecordLap}
-                onClearLaps={handleClearPeriodLaps}
-                formatTimeSeconds={formatTimeSeconds}
-              />
+              <AnimatePresence initial={false}>
+                {showLaps && (
+                  <motion.aside
+                    key="lap-panel"
+                    className="min-w-0 xl:sticky xl:top-[112px] xl:max-h-[calc(100dvh-128px)]"
+                    {...lapMotion}
+                  >
+                    <LapPanel
+                      period={currentPeriod}
+                      subjectName={selectedSubject.name}
+                      subjectStartSec={currentLapAnchorSec}
+                      laps={currentPeriodLaps}
+                      sortAsc={lapSortAsc}
+                      justAddedLapId={justAddedLapId}
+                      canRecordLap={isRunning}
+                      onToggleSort={() => setLapSortAsc((prev) => !prev)}
+                      onRecordLap={handleRecordLap}
+                      onClearLaps={handleClearPeriodLaps}
+                      formatTimeSeconds={formatTimeSeconds}
+                    />
+                  </motion.aside>
+                )}
+              </AnimatePresence>
             </div>
           </section>
         </div>

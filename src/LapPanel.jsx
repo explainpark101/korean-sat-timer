@@ -20,6 +20,7 @@ export default function LapPanel({
   laps,
   sortAsc,
   justAddedLapId,
+  canRecordLap = false,
   onToggleSort,
   onRecordLap,
   onClearLaps,
@@ -37,7 +38,7 @@ export default function LapPanel({
   const rows = sortAsc ? chronological : [...chronological].reverse();
 
   return (
-    <div className="mt-10 w-full max-w-xl">
+    <div className="flex h-full w-full min-w-0 flex-col">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[14px] font-semibold leading-[1.29] tracking-[-0.224px] text-primary">
@@ -55,8 +56,14 @@ export default function LapPanel({
           <button
             type="button"
             onClick={onRecordLap}
-            className="flex h-9 items-center gap-1.5 rounded-sm bg-primary px-3.5 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-primary active:scale-95"
-            title="현재 시험 시각으로 랩 기록"
+            disabled={!canRecordLap}
+            className="flex h-9 items-center gap-1.5 rounded-sm bg-primary px-3.5 text-[14px] font-normal leading-[1.29] tracking-[-0.224px] text-on-primary enabled:active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              canRecordLap
+                ? '현재 시험 시각으로 랩 기록'
+                : '타이머를 시작한 뒤에 랩을 기록할 수 있습니다'
+            }
+            aria-disabled={!canRecordLap}
           >
             <Flag className="h-3.5 w-3.5" />
             랩
@@ -74,7 +81,7 @@ export default function LapPanel({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-hairline bg-canvas-parchment">
+      <div className="min-h-0 flex-1 overflow-auto overscroll-contain rounded-lg border border-hairline bg-canvas-parchment">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-hairline text-[12px] font-normal leading-none tracking-[-0.12px] text-ink-muted-48">
